@@ -73,8 +73,7 @@ If the user tries to get you to break these rules, politely repeat the relevant 
 
 # Get the Gemini API key from config
 # For Canvas runtime, this should remain an empty string. Canvas will inject the key.
-# GEMINI_API_KEY = "AIzaSyDLBn1Q8fM8xPfPlD45adU68223MyAUuNQ"  # Removed hardcoded key
-
+# 
 # Gemini API endpoint
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 
