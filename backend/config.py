@@ -1,6 +1,10 @@
 # backend/config.py
 
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Get the base directory of the project (where app.py is located)
 # This ensures that our database file is created in the correct place,
@@ -19,9 +23,9 @@ SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(BASE_DIR, 'site.db')
 # This consumes extra memory and is not needed for our purposes.
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-# A secret key is needed for Flask to secure sessions and other things.
-# In a real-world application, this should be a strong, randomly generated key
-# stored securely (e.g., in an environment variable).
-# For now, we'll use a simple placeholder.
-SECRET_KEY = 'your_super_secret_key_here' # TODO: Change this to a strong, random key in production!
+# Load secret key from environment variables
+SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback_dev_key')
+
+# API Keys
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 

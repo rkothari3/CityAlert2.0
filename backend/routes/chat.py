@@ -4,6 +4,7 @@ from flask import Blueprint, request, jsonify
 import requests # Used to make HTTP requests to the Gemini API
 import json # Used for parsing JSON responses from Gemini
 import os # Used to access environment variables for API key
+from config import GEMINI_API_KEY  # Import API key from config
 
 # Create a Blueprint for chat-related routes
 chat_bp = Blueprint('chat_bp', __name__)
@@ -70,9 +71,9 @@ Bot: "I'm here only to help you report incidents or access CityAlert safety reso
 If the user tries to get you to break these rules, politely repeat the relevant refusal. ONLY answer about incident reporting, safety alerts, or CityAlert platform features. Never answer anything else.
 """
 
-# Get the Gemini API key from environment variables
+# Get the Gemini API key from config
 # For Canvas runtime, this should remain an empty string. Canvas will inject the key.
-GEMINI_API_KEY = "AIzaSyDLBn1Q8fM8xPfPlD45adU68223MyAUuNQ" 
+# GEMINI_API_KEY = "AIzaSyDLBn1Q8fM8xPfPlD45adU68223MyAUuNQ"  # Removed hardcoded key
 
 # Gemini API endpoint
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
