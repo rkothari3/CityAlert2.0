@@ -189,3 +189,28 @@ def delete_incident(incident_id):
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
+# Route to delete all incidents
+@incidents_bp.route('/incidents/clear-all', methods=['DELETE'])
+def clear_all_incidents():
+    """
+    Deletes ALL incident reports from the database.
+    This is a destructive operation and should be used with caution.
+    """
+    try:
+        # Count incidents before deletion
+        count = Incident.query.count()
+        
+        # Delete all incidents
+        Incident.query.delete()
+        db.session.commit()
+        
+        print(f"✓ Successfully deleted all {count} incidents")
+        return jsonify({
+            "message": f"All incidents deleted successfully ({count} total)",
+            "count": count
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        print(f"ERROR clearing incidents: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+

@@ -20,6 +20,9 @@ from routes.incidents import incidents_bp
 # Import the departments Blueprint
 from routes.departments import departments_bp
 
+# Chat backend
+from routes.chat import chat_bp
+
 # Initialize the Flask application
 app = Flask(__name__)
 
@@ -51,6 +54,9 @@ app.register_blueprint(incidents_bp, url_prefix='/api')
 
 # Same for departments
 app.register_blueprint(departments_bp, url_prefix='/api')
+
+# Chat
+app.register_blueprint(chat_bp, url_prefix='/api')
 
 # Function to initialize default departments
 def create_default_departments():
