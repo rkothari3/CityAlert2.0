@@ -1,0 +1,11 @@
+/* Department portal styles */
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* Additional custom styles for the department portal can be added here */
+/* These styles complement the Tailwind CSS framework */

@@ -1,0 +1,2 @@
+- Improve the Chatbot user experience
+- Maybe add a maps functionality
