@@ -1,2 +1,5 @@
-- Improve the Chatbot user experience
-- Maybe add a maps functionality
+- Smart Photo Analysis: Ai analyzes the image and determines the issue. User simply provides additional context and other details
+- Voice enabled reporting: Typing can be hard so improve it using voice. Even multilingual support
+- Duplicate incident detection.
+- Map based location selection and map used to showcase different reported incidents all over the place.
+- The departmental can dispatch alerts to users in the database. Might need to build user profile stuff for this. This can also be used to provide update on severe events.
