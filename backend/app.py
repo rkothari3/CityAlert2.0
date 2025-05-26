@@ -23,6 +23,9 @@ from routes.departments import departments_bp
 # Chat backend
 from routes.chat import chat_bp
 
+# Add this import
+from routes.config import config_bp
+
 # Initialize the Flask application
 app = Flask(__name__)
 
@@ -57,6 +60,9 @@ app.register_blueprint(departments_bp, url_prefix='/api')
 
 # Chat
 app.register_blueprint(chat_bp, url_prefix='/api')
+
+# Add this line with your other blueprint registrations
+app.register_blueprint(config_bp)
 
 # Function to initialize default departments
 def create_default_departments():

@@ -126,7 +126,7 @@
     </footer>
 
     <div id="chatbotModal" class="chatbot-modal hidden">
-        <gmpx-api-loader key="AIzaSyAEEKoMIx2HUkadquI8stDYbfKfAZWUGGw" solution-channel="GMP_GE_placepicker_v2">
+        <gmpx-api-loader id="apiLoader" solution-channel="GMP_GE_placepicker_v2">
         </gmpx-api-loader>
         <div class="chatbot-container">
             <div class="flex justify-between items-center bg-blue-600 text-white p-4 rounded-t-xl shadow-md">
@@ -160,6 +160,13 @@
         </div>
     </div>
 
+    <script src="http://127.0.0.1:5000/js/config.js"></script>
     <script src="js/main.js"></script>
-    <script src="js/chat.js"></script> </body>
+    <script src="js/chat.js"></script>
+    <script>
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('apiLoader').setAttribute('key', window.CITY_ALERT_CONFIG.MAPS_API_KEY);
+});
+</script>
+</body>
 </html>
