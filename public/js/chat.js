@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let chatHistory = []; // Stores the conversation history for sending to the LLM
     let uploadedImageBase64 = null; // Stores the base64 string of the uploaded image
     let isLocationMode = false; // Flag to track if we're in location input mode
+    let hasAnalyzedImage = false; // Flag to track if image has been analyzed
 
     // State variables for incident submission flow
     // This object will hold the parsed incident details before submission
@@ -419,15 +420,101 @@ document.addEventListener('DOMContentLoaded', () => {
         imageUpload.click(); // Trigger the hidden file input click
     });
 
+    /**
+     * Analyzes an uploaded image immediately using Gemini
+     * @param {string} imageBase64 - The base64 string of the uploaded image
+     */
+    async function analyzeImageImmediately(imageBase64) {
+        showTypingIndicator();
+        
+        // Create a special message for immediate image analysis
+        const analysisMessage = {
+            role: "user",
+            parts: [
+                { text: "Please analyze this image and tell me what type of incident or safety issue you can identify. Describe what you see and suggest what should be reported." },
+                {
+                    inlineData: {
+                        mimeType: "image/png",
+                        data: imageBase64.split(',')[1]
+                    }
+                }
+            ]
+        };
+
+        // Add to chat history
+        chatHistory.push(analysisMessage);
+
+        try {
+            const response = await fetch('http://127.0.0.1:5000/api/chat/gemini', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ chatHistory: chatHistory })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                hideTypingIndicator();
+
+                const botResponse = data.response;
+                addMessage(botResponse, 'bot');
+                chatHistory.push({ role: "model", parts: [{ text: botResponse }] });
+                
+                hasAnalyzedImage = true;
+
+                // Check if bot is asking for location after analysis
+                if (isAskingForLocation(botResponse)) {
+                    toggleLocationMode(true);
+                }
+
+                // Check for confirmation pattern
+                const summaryRegex = /Okay, so I have that there is a (.*) at (.*)\. This will be classified under (.*)\. Is this information correct and complete\?/i;
+                const match = botResponse.match(summaryRegex);
+
+                if (match && match.length === 4) {
+                    currentIncidentDetails.description = match[1].trim();
+                    currentIncidentDetails.location = match[2].trim();
+                    currentIncidentDetails.department_classification = match[3].trim().toUpperCase();
+                    currentIncidentDetails.image_url = uploadedImageBase64;
+                    awaitingConfirmation = true;
+                    console.log("Awaiting confirmation for incident:", currentIncidentDetails);
+                }
+
+            } else {
+                const errorData = await response.json();
+                hideTypingIndicator();
+                console.error('Error from image analysis:', errorData);
+                addMessage("I'm sorry, I encountered an error analyzing the image. You can describe the incident instead.", 'bot');
+            }
+        } catch (error) {
+            hideTypingIndicator();
+            console.error('Error during image analysis:', error);
+            addMessage("I'm sorry, I'm having trouble analyzing the image right now. You can describe the incident instead.", 'bot');
+        }
+    }
+
     // Event listener for when a file is selected
-    imageUpload.addEventListener('change', (event) => {
+    imageUpload.addEventListener('change', async (event) => {
         const file = event.target.files[0];
         if (file) {
             const reader = new FileReader();
-            reader.onload = (e) => {
+            reader.onload = async (e) => {
                 uploadedImageBase64 = e.target.result; // Store base64 string of the image
                 uploadedImagePreview.src = uploadedImageBase64; // Display image preview
                 imagePreviewContainer.classList.remove('hidden'); // Show preview container
+                
+                // Display the image in chat
+                addMessage("I've uploaded an image for analysis.", 'user', uploadedImageBase64);
+                
+                // If this is the first interaction or no meaningful conversation has started,
+                // immediately analyze the image
+                if (chatHistory.length <= 2 || !hasAnalyzedImage) {
+                    await analyzeImageImmediately(uploadedImageBase64);
+                } else {
+                    // If conversation is ongoing, just show that image was uploaded
+                    addMessage("I can see your image. Please tell me what you'd like me to analyze or report about it.", 'bot');
+                }
             };
             reader.readAsDataURL(file); // Read file as base64 data URL
         }
@@ -447,8 +534,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Initial bot greeting when the modal opens (triggered by main.js or on page load)
-    addMessage("Hello! I'm CityAlert, your AI assistant for reporting incidents. Please tell me what happened.", 'bot');
-    chatHistory.push({ role: "model", parts: [{ text: "Hello! I'm CityAlert, your AI assistant for reporting incidents. Please tell me what happened." }] });
+    addMessage("Hello! I'm CityAlert, your AI assistant for reporting incidents. You can either describe what happened or upload an image for me to analyze.", 'bot');
+    chatHistory.push({ role: "model", parts: [{ text: "Hello! I'm CityAlert, your AI assistant for reporting incidents. You can either describe what happened or upload an image for me to analyze." }] });
 
     console.log("chat.js loaded.");
 });

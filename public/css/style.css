@@ -1,0 +1,33 @@
+/* Add or append these styles to the existing CSS file */
+
+/* Image modal styles */
+#image-modal {
+    transition: opacity 0.3s ease;
+}
+
+#image-modal.hidden {
+    display: none;
+}
+
+#modal-image {
+    transition: transform 0.3s ease;
+}
+
+.incident-image-container img {
+    transition: all 0.2s ease;
+}
+
+.incident-image-container img:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Image zoom effect */
+@keyframes zoom {
+    from {transform: scale(0.8); opacity: 0;}
+    to {transform: scale(1); opacity: 1;}
+}
+
+#modal-image {
+    animation: zoom 0.3s ease;
+}

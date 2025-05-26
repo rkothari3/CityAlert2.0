@@ -57,6 +57,9 @@ def get_department_incidents(department_name):
         if status_filter:
             query = query.filter_by(status=status_filter)
 
+        # Order by timestamp descending (newest first)
+        query = query.order_by(Incident.timestamp.desc())
+
         incidents = query.all()
 
         # Convert list of Incident objects to list of dictionaries

@@ -133,6 +133,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                 day: 'numeric'
             });
 
+            // Fix image URL handling
+            let imageHtml = '';
+            if (incident.image_url) {
+                // Check if the image_url is a relative path (starts with '/uploads/')
+                const imageUrl = incident.image_url.startsWith('/uploads/') 
+                    ? `${API_BASE_URL}${incident.image_url}`
+                    : incident.image_url;
+                
+                imageHtml = `<div class="incident-image-container">
+                                <img src="${imageUrl}" alt="Incident Image" class="w-full h-48 object-cover rounded-md mb-4 cursor-pointer hover:opacity-90 transition-opacity" 
+                                     onclick="openImageModal('${imageUrl}')" 
+                                     onerror="this.onerror=null;this.src='https://placehold.co/400x200/cccccc/333333?text=No+Image';">
+                                <div class="text-blue-600 text-xs text-center -mt-3 mb-3">Click image to enlarge</div>
+                             </div>`;
+            }
+
             // Create the HTML structure for a single alert card
             const alertCard = `
                 <div class="bg-white p-6 rounded-lg shadow-md border-l-4 ${borderColor}">
@@ -144,7 +160,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <p class="text-gray-700 mb-4">
                         Departments: ${incident.department_classification.split(',').map(d => `<span class="inline-block bg-blue-100 text-blue-800 text-xs font-medium mr-1 px-2.5 py-0.5 rounded-full">${d.trim()}</span>`).join('')}
                     </p>
-                    ${incident.image_url ? `<img src="${incident.image_url}" alt="Incident Image" class="w-full h-48 object-cover rounded-md mb-4" onerror="this.onerror=null;this.src='https://placehold.co/400x200/cccccc/333333?text=No+Image';">` : ''}
+                    ${imageHtml}
                     ${incident.latitude && incident.longitude ? 
                         `<button onclick="focusMapOnIncident(${incident.latitude}, ${incident.longitude})" class="text-blue-600 hover:text-blue-800 text-sm font-medium">📍 View on Map</button>` : ''}
                     </div>
@@ -183,3 +199,60 @@ function focusMapOnIncident(lat, lng) {
         window.incidentMap.setCenter(lat, lng, 16);
     }
 }
+
+/**
+ * Opens a modal to display the full-size image
+ * @param {string} imageUrl - URL of the image to display
+ */
+function openImageModal(imageUrl) {
+    // Create modal if it doesn't exist yet
+    let imageModal = document.getElementById('image-modal');
+    if (!imageModal) {
+        // Create the modal element
+        imageModal = document.createElement('div');
+        imageModal.id = 'image-modal';
+        imageModal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden';
+        
+        // Create modal content
+        imageModal.innerHTML = `
+            <div class="relative max-w-4xl w-full mx-4">
+                <div class="relative">
+                    <img id="modal-image" src="" alt="Full size image" class="max-w-full max-h-[85vh] object-contain mx-auto rounded-lg shadow-xl">
+                    <button id="close-image-modal" class="absolute top-2 right-2 bg-white bg-opacity-75 rounded-full p-2 hover:bg-opacity-100 transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(imageModal);
+        
+        // Add event listener to close button
+        document.getElementById('close-image-modal').addEventListener('click', () => {
+            imageModal.classList.add('hidden');
+        });
+        
+        // Close modal when clicking outside the image
+        imageModal.addEventListener('click', (e) => {
+            if (e.target === imageModal) {
+                imageModal.classList.add('hidden');
+            }
+        });
+        
+        // Allow ESC key to close modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !imageModal.classList.contains('hidden')) {
+                imageModal.classList.add('hidden');
+            }
+        });
+    }
+    
+    // Set the image source and display modal
+    document.getElementById('modal-image').src = imageUrl;
+    imageModal.classList.remove('hidden');
+}
+
+// Make image modal function globally available
+window.openImageModal = openImageModal;

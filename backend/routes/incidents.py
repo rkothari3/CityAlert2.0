@@ -1,10 +1,13 @@
 # backend/routes/incidents.py
 
 import datetime
-from flask import Blueprint, request, jsonify
+import base64
+import os
+from flask import Blueprint, request, jsonify, send_from_directory
 from database import db # Import the db instance from our database.py
 from models import Incident, Department # Import our Incident and Department models
 from utils.geocoding import geocode_address # Import our new geocoding function
+from uuid import uuid4
 
 # Create a Blueprint for incident-related routes.
 # A Blueprint helps organize a group of related views and other functions.
@@ -16,16 +19,15 @@ def create_incident():
     """
     Handles the creation of a new incident report.
     Expects JSON data with 'description', 'location', 'department_classification',
-    and optionally 'image_url'.
-    Now also geocodes the location to get latitude and longitude.
+    and optionally 'image_url' (can be base64 data or URL).
+    Now also geocodes the location and handles image storage.
     """
     print("=== INCIDENT CREATION REQUEST RECEIVED ===")
     print(f"Request method: {request.method}")
-    print(f"Request headers: {dict(request.headers)}")
     
     try:
-        data = request.get_json() # Get JSON data from the request body
-        print(f"Request data: {data}")
+        data = request.get_json()
+        print(f"Request data keys: {list(data.keys()) if data else 'None'}")
 
         # Validate required fields
         if not data:
@@ -56,9 +58,42 @@ def create_incident():
         description = data['description']
         location = data['location']
         department_classification = data['department_classification']
-        image_url = data.get('image_url') # .get() allows for optional fields
+        image_data = data.get('image_url')
 
         print(f"Creating incident: {description[:50]}... at {location}")
+
+        # Handle image storage
+        stored_image_path = None
+        if image_data:
+            if image_data.startswith('data:image/'):
+                # This is base64 image data
+                try:
+                    # Create uploads directory if it doesn't exist
+                    uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads')
+                    os.makedirs(uploads_dir, exist_ok=True)
+                    
+                    # Extract base64 data and decode
+                    header, encoded = image_data.split(',', 1)
+                    image_bytes = base64.b64decode(encoded)
+                    
+                    # Generate unique filename
+                    file_extension = 'png' if 'png' in header else 'jpg'
+                    filename = f"incident_{uuid4()}.{file_extension}"
+                    file_path = os.path.join(uploads_dir, filename)
+                    
+                    # Save image file
+                    with open(file_path, 'wb') as f:
+                        f.write(image_bytes)
+                    
+                    stored_image_path = f"/uploads/{filename}"
+                    print(f"✓ Image saved as: {stored_image_path}")
+                    
+                except Exception as e:
+                    print(f"⚠ Error saving image: {e}")
+                    # Continue without image if saving fails
+            else:
+                # This is already a URL
+                stored_image_path = image_data
 
         # NEW: Geocode the location to get latitude and longitude
         print("Attempting to geocode the location...")
@@ -69,14 +104,14 @@ def create_incident():
         else:
             print("⚠ Geocoding failed, but continuing with incident creation")
 
-        # Create a new Incident object with the geocoded coordinates
+        # Create a new Incident object with the stored image path
         new_incident = Incident(
             description=description,
             location=location,
             latitude=latitude,  # Will be None if geocoding failed
             longitude=longitude,  # Will be None if geocoding failed
             department_classification=department_classification,
-            image_url=image_url
+            image_url=stored_image_path
         )
 
         # Add the new incident to the database session and commit
@@ -252,4 +287,17 @@ def clear_all_incidents():
         db.session.rollback()
         print(f"ERROR clearing incidents: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
+# Add a new route to serve uploaded images
+@incidents_bp.route('/uploads/<filename>', methods=['GET'])
+def serve_image(filename):
+    """
+    Serves uploaded images from the uploads directory.
+    """
+    try:
+        uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads')
+        return send_from_directory(uploads_dir, filename)
+    except Exception as e:
+        print(f"ERROR serving image {filename}: {str(e)}")
+        return jsonify({"error": str(e)}), 404
 

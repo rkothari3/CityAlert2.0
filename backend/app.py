@@ -1,7 +1,7 @@
 # backend/app.py
 
 # Import necessary modules from Flask and Flask-SQLAlchemy, and Flask-CORS
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import os
@@ -110,6 +110,11 @@ def home():
     return jsonify({"message": "CityAlert Backend is running!"})
 
 
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    """Serve uploaded images"""
+    uploads_dir = os.path.join(os.path.dirname(__file__), 'uploads')
+    return send_from_directory(uploads_dir, filename)
 
 # This block ensures that the Flask development server runs only when the script
 # is executed directly (e.g., `python app.py`), not when imported as a module.

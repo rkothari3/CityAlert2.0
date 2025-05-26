@@ -184,6 +184,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 hour: '2-digit', minute: '2-digit'
             });
 
+            // Fix image URL handling - this is where the issue is
+            let imageHtml = '';
+            if (incident.image_url) {
+                // Check if the image_url is a relative path (starts with '/uploads/')
+                const imageUrl = incident.image_url.startsWith('/uploads/') 
+                    ? `http://127.0.0.1:5000/api${incident.image_url}`
+                    : incident.image_url;
+                
+                imageHtml = `<div class="incident-image-container">
+                                <img src="${imageUrl}" alt="Incident Image" class="w-full h-48 object-cover rounded-md mb-4 cursor-pointer hover:opacity-90 transition-opacity" 
+                                     onclick="openImageModal('${imageUrl}')" 
+                                     onerror="this.onerror=null;this.src='https://placehold.co/400x200/cccccc/333333?text=No+Image';">
+                                <div class="text-blue-600 text-xs text-center -mt-3 mb-3">Click image to enlarge</div>
+                             </div>`;
+            }
+
             // Construct the HTML content for each incident card
             incidentCard.innerHTML = `
                 <div class="flex justify-between items-start mb-3">
@@ -196,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${incident.latitude && incident.longitude ? 
                     `<p class="text-gray-600 text-sm mb-2"><strong>Coordinates:</strong> ${incident.latitude.toFixed(4)}, ${incident.longitude.toFixed(4)}</p>` : ''}
                 <p class="text-gray-600 text-sm mb-4"><strong>Reported:</strong> ${formattedDate}</p>
-                ${incident.image_url ? `<p class="text-gray-600 text-sm mb-4"><strong>Image:</strong> <a href="${incident.image_url}" target="_blank" class="text-blue-600 hover:underline">View Attached Image</a></p>` : ''}
+                ${imageHtml}
                 
                 <div class="flex justify-between items-center mt-4">
                     <div class="flex space-x-2">
@@ -405,4 +421,61 @@ function focusDepartmentMapOnIncident(lat, lng) {
         console.error('Map not initialized or missing setCenter method');
     }
 }
+
+/**
+ * Opens a modal to display the full-size image
+ * @param {string} imageUrl - URL of the image to display
+ */
+function openImageModal(imageUrl) {
+    // Create modal if it doesn't exist yet
+    let imageModal = document.getElementById('image-modal');
+    if (!imageModal) {
+        // Create the modal element
+        imageModal = document.createElement('div');
+        imageModal.id = 'image-modal';
+        imageModal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden';
+        
+        // Create modal content
+        imageModal.innerHTML = `
+            <div class="relative max-w-4xl w-full mx-4">
+                <div class="relative">
+                    <img id="modal-image" src="" alt="Full size image" class="max-w-full max-h-[85vh] object-contain mx-auto rounded-lg shadow-xl">
+                    <button id="close-image-modal" class="absolute top-2 right-2 bg-white bg-opacity-75 rounded-full p-2 hover:bg-opacity-100 transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(imageModal);
+        
+        // Add event listener to close button
+        document.getElementById('close-image-modal').addEventListener('click', () => {
+            imageModal.classList.add('hidden');
+        });
+        
+        // Close modal when clicking outside the image
+        imageModal.addEventListener('click', (e) => {
+            if (e.target === imageModal) {
+                imageModal.classList.add('hidden');
+            }
+        });
+        
+        // Allow ESC key to close modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !imageModal.classList.contains('hidden')) {
+                imageModal.classList.add('hidden');
+            }
+        });
+    }
+    
+    // Set the image source and display modal
+    document.getElementById('modal-image').src = imageUrl;
+    imageModal.classList.remove('hidden');
+}
+
+// Make image modal function globally available
+window.openImageModal = openImageModal;
 
