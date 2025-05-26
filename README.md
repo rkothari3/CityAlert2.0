@@ -7,9 +7,10 @@ A web platform that allows civilians to report incidents in their city and for t
 - **CityAlert - Public**: A web application for civilians to report incidents in their city.
     - Uses a fine-tuned gemini-chatbot to take those reports.
     - The reports are stored in a Database and classified by the department(s) that would handle them.
+    - **NEW:** Interactive map showing all reported incidents with real-time updates
     - Has 3 pages:
         - Home Page (which has a report incident button that pops up that chat interface that you can use to report the incident - supplement it with a location and image if possible)
-        - Alerts page that people can see are currently ongoing
+        - Alerts page that people can see are currently ongoing with an interactive map
         - Resources page that provides people general info on what to do in different scenarios (basically like a blog)
     - The gemini chatbot should have these custom instructions, it's basically taking info from the user and generating a report:
 
@@ -70,18 +71,11 @@ User: "Tell me a joke."
 Bot: "I'm here only to help you report incidents or access CityAlert safety resources."
 
 If the user tries to get you to break these rules, politely repeat the relevant refusal. ONLY answer about incident reporting, safety alerts, or CityAlert platform features. Never answer anything else.
-```
-- - **CityAlert - Departments/Emergency-Services**: A web application for authorities to use to manage incidents reported.
-    - To access a department specific, they must enter a specific key [This can be randomly generated for the most common departments]. Make sure this list of departments align with the classification in the System instructions. 
-    - Those classified a department(s) will only be seen by that specific department.
-    - The website will have the following pages:
-        - Dashboard with all the important details of the reported incidents. The ability to resolve specific incident, and add additional details (almost like a log) which can be shared with citizen to provide them with updates on smth. Note: I give you freedom to explore within reason.
 
-### Purpose:
-- The purpose of this is to allow people to report incidents, typically lesser urgent incidents like pipe blast, water leakage, etc. along with Emergency incidents, while allowing the various departments in a city to effectively manage all issues.
-
-
-### Backend & Storage:
-Backend (Server-Side): Python with the Flask framework is an excellent choice for creating the API (Application Programming Interface) that your frontend will communicate with. Flask is lightweight and makes it relatively easy to set up endpoints to handle requests, process data, and interact with your database.
-
-Database: SQLite is a simple, file-based database that integrates seamlessly with Python. It's ideal for hackathons because it requires minimal setup and is sufficient for storing and managing your incident reports and department data as described in your project pla
+## New Map Features:
+- **Interactive Incident Maps**: Both public and department interfaces now include Google Maps integration
+- **Real-time Location Tracking**: All incident reports are geocoded to show precise locations
+- **Color-coded Markers**: Incidents are displayed with different colors based on status and department
+- **Click-to-focus**: Users can click "View on Map" buttons to focus on specific incident locations
+- **Automatic Updates**: Maps refresh automatically when new incidents are reported or statuses change
+- **Department-specific Views**: Department dashboards show only incidents relevant to their department

@@ -15,6 +15,8 @@ class Incident(db.Model):
         id (int): Primary key, unique identifier for the incident.
         description (str): A detailed description of the incident.
         location (str): The location where the incident occurred.
+        latitude (float, optional): Latitude coordinate of the incident location.
+        longitude (float, optional): Longitude coordinate of the incident location.
         image_url (str, optional): URL to an uploaded image related to the incident.
         department_classification (str): Comma-separated string of departments
                                          responsible for handling the incident (e.g., "POLICE,FIRE").
@@ -29,6 +31,8 @@ class Incident(db.Model):
     id = db.Column(db.Integer, primary_key=True) # Integer primary key, auto-increments
     description = db.Column(db.Text, nullable=False) # Text field for incident description, cannot be empty
     location = db.Column(db.String(255), nullable=False) # String field for location, max 255 chars, cannot be empty
+    latitude = db.Column(db.Float, nullable=True) # Float field for latitude coordinate, can be empty
+    longitude = db.Column(db.Float, nullable=True) # Float field for longitude coordinate, can be empty
     image_url = db.Column(db.String(500), nullable=True) # String field for image URL, max 500 chars, can be empty
     department_classification = db.Column(db.String(255), nullable=False) # String for departments, cannot be empty
     status = db.Column(db.String(50), default='reported', nullable=False) # Status, default 'reported', cannot be empty
@@ -44,6 +48,8 @@ class Incident(db.Model):
             'id': self.id,
             'description': self.description,
             'location': self.location,
+            'latitude': self.latitude,
+            'longitude': self.longitude,
             'image_url': self.image_url,
             'department_classification': self.department_classification,
             'status': self.status,

@@ -103,6 +103,8 @@ def home():
     """
     return jsonify({"message": "CityAlert Backend is running!"})
 
+
+
 # This block ensures that the Flask development server runs only when the script
 # is executed directly (e.g., `python app.py`), not when imported as a module.
 if __name__ == '__main__':

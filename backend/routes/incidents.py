@@ -4,6 +4,7 @@ import datetime
 from flask import Blueprint, request, jsonify
 from database import db # Import the db instance from our database.py
 from models import Incident, Department # Import our Incident and Department models
+from utils.geocoding import geocode_address # Import our new geocoding function
 
 # Create a Blueprint for incident-related routes.
 # A Blueprint helps organize a group of related views and other functions.
@@ -16,6 +17,7 @@ def create_incident():
     Handles the creation of a new incident report.
     Expects JSON data with 'description', 'location', 'department_classification',
     and optionally 'image_url'.
+    Now also geocodes the location to get latitude and longitude.
     """
     print("=== INCIDENT CREATION REQUEST RECEIVED ===")
     print(f"Request method: {request.method}")
@@ -58,10 +60,21 @@ def create_incident():
 
         print(f"Creating incident: {description[:50]}... at {location}")
 
-        # Create a new Incident object
+        # NEW: Geocode the location to get latitude and longitude
+        print("Attempting to geocode the location...")
+        latitude, longitude = geocode_address(location)
+        
+        if latitude is not None and longitude is not None:
+            print(f"✓ Successfully geocoded location to ({latitude}, {longitude})")
+        else:
+            print("⚠ Geocoding failed, but continuing with incident creation")
+
+        # Create a new Incident object with the geocoded coordinates
         new_incident = Incident(
             description=description,
             location=location,
+            latitude=latitude,  # Will be None if geocoding failed
+            longitude=longitude,  # Will be None if geocoding failed
             department_classification=department_classification,
             image_url=image_url
         )
@@ -136,6 +149,7 @@ def update_incident(incident_id):
     """
     Updates an existing incident report by its ID.
     Expects JSON data with fields to update (e.g., 'status', 'description').
+    If location is updated, it will also re-geocode the new location.
     """
     try:
         incident = Incident.query.get(incident_id) # Find the incident by ID
@@ -152,7 +166,13 @@ def update_incident(incident_id):
         if 'description' in data:
             incident.description = data['description']
         if 'location' in data:
-            incident.location = data['location']
+            # If location is being updated, re-geocode it
+            new_location = data['location']
+            incident.location = new_location
+            print(f"Location updated, re-geocoding: {new_location}")
+            latitude, longitude = geocode_address(new_location)
+            incident.latitude = latitude
+            incident.longitude = longitude
         if 'image_url' in data:
             incident.image_url = data['image_url']
         if 'department_classification' in data:
@@ -173,20 +193,39 @@ def update_incident(incident_id):
 def delete_incident(incident_id):
     """
     Deletes an incident report by its ID.
+    Requires department authentication via department_key and department_name in request body.
     """
     try:
         incident = Incident.query.get(incident_id) # Find the incident by ID
 
         if not incident:
-            return jsonify({"message": "Incident not found"}), 404
+            return jsonify({"error": "Incident not found"}), 404
+
+        # Check if request has JSON data for department authentication
+        data = request.get_json()
+        if data and 'department_key' in data and 'department_name' in data:
+            # Validate department credentials
+            department = Department.query.filter_by(
+                name=data['department_name'].upper(),
+                login_key=data['department_key']
+            ).first()
+            
+            if not department:
+                return jsonify({"error": "Invalid department credentials"}), 401
+            
+            # Check if department is authorized to delete this incident
+            if data['department_name'].upper() not in incident.department_classification:
+                return jsonify({"error": "Department not authorized to delete this incident"}), 403
 
         db.session.delete(incident) # Delete the incident from the session
         db.session.commit() # Commit the deletion
 
+        print(f"✓ Incident {incident_id} deleted successfully")
         return jsonify({"message": "Incident deleted successfully"}), 200
 
     except Exception as e:
         db.session.rollback()
+        print(f"ERROR deleting incident {incident_id}: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 # Route to delete all incidents

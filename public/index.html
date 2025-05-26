@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CityAlert - Report Incidents</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/@googlemaps/extended-component-library/0.6.11/index.min.js"></script>
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -77,6 +78,21 @@
             margin-top: 0.5rem;
             display: block;
         }
+        .place-picker-container {
+            flex-grow: 1;
+            display: none;
+        }
+        .place-picker-container.active {
+            display: block;
+        }
+        gmpx-place-picker {
+            width: 100%;
+            --gmpx-color-surface: #ffffff;
+            --gmpx-color-on-surface: #374151;
+            --gmpx-color-primary: #3b82f6;
+            --gmpx-color-outline: #d1d5db;
+            --gmpx-font-family: 'Inter', sans-serif;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -110,6 +126,8 @@
     </footer>
 
     <div id="chatbotModal" class="chatbot-modal hidden">
+        <gmpx-api-loader key="AIzaSyAEEKoMIx2HUkadquI8stDYbfKfAZWUGGw" solution-channel="GMP_GE_placepicker_v2">
+        </gmpx-api-loader>
         <div class="chatbot-container">
             <div class="flex justify-between items-center bg-blue-600 text-white p-4 rounded-t-xl shadow-md">
                 <h2 class="text-xl font-semibold">CityAlert Bot</h2>
@@ -128,6 +146,9 @@
                 </button>
                 <input type="text" id="chatInput" placeholder="Type your message..."
                        class="flex-grow p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div id="placePickerContainer" class="place-picker-container">
+                    <gmpx-place-picker id="placePicker" placeholder="Enter a location or address"></gmpx-place-picker>
+                </div>
                 <button id="sendChatBtn" class="p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                 </button>

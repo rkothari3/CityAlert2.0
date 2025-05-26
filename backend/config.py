@@ -29,3 +29,12 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback_dev_key')
 # API Keys
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 
+# Google Maps API Key for geocoding
+# You'll need to get this from Google Cloud Console:
+# 1. Go to https://console.cloud.google.com/
+# 2. Create a new project or select existing one
+# 3. Enable the "Geocoding API"
+# 4. Create credentials (API key)
+# 5. Optionally restrict the API key to your server's IP
+GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY', '')  # Replace with your actual API key
+

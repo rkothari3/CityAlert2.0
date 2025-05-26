@@ -76,7 +76,16 @@ NOTE: Not for production just for ease of testing.
                         method: 'DELETE'
                     });
                     
-                    const data = await response.json();
+                    const responseText = await response.text();
+                    
+                    // Try to parse as JSON, fallback to text if it fails
+                    let data;
+                    try {
+                        data = JSON.parse(responseText);
+                    } catch (jsonError) {
+                        console.error('Failed to parse response as JSON:', responseText);
+                        throw new Error(`Server returned non-JSON response: ${responseText.substring(0, 100)}...`);
+                    }
                     
                     if (response.ok) {
                         resultMessage.innerHTML = `Success: ${data.message}`;

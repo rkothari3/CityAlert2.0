@@ -10,9 +10,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const imagePreviewContainer = document.getElementById('imagePreviewContainer');
     const uploadedImagePreview = document.getElementById('uploadedImagePreview');
     const removeImageBtn = document.getElementById('removeImageBtn');
+    const placePickerContainer = document.getElementById('placePickerContainer');
+    const placePicker = document.getElementById('placePicker');
 
     let chatHistory = []; // Stores the conversation history for sending to the LLM
     let uploadedImageBase64 = null; // Stores the base64 string of the uploaded image
+    let isLocationMode = false; // Flag to track if we're in location input mode
 
     // State variables for incident submission flow
     // This object will hold the parsed incident details before submission
@@ -84,8 +87,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify(incidentData)
             });
 
+            const responseText = await response.text();
+            
+            // Try to parse as JSON, fallback to text if it fails
+            let result;
+            try {
+                result = JSON.parse(responseText);
+            } catch (jsonError) {
+                hideTypingIndicator();
+                console.error('Failed to parse response as JSON:', responseText);
+                addMessage(`Server error: Unable to process response. Please try again later.`, 'bot');
+                return;
+            }
+
             if (response.ok) {
-                const result = await response.json();
                 hideTypingIndicator();
                 addMessage("Thank you! Your report has been successfully submitted to the CityAlert system. Incident ID: " + result.id, 'bot');
                 // Reset chat for a new report after successful submission
@@ -94,10 +109,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 awaitingConfirmation = false;
             } else {
                 // Handle errors from the backend API (e.g., validation errors, duplicate incidents)
-                const errorData = await response.json();
                 hideTypingIndicator();
-                console.error('Error submitting incident:', errorData);
-                addMessage(`Failed to submit report: ${errorData.error || errorData.warning || 'Unknown error'}. Please try again.`, 'bot');
+                console.error('Error submitting incident:', result);
+                addMessage(`Failed to submit report: ${result.error || result.warning || 'Unknown error'}. Please try again.`, 'bot');
             }
         } catch (error) {
             // Handle network errors (e.g., backend not reachable)
@@ -107,8 +121,174 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    /**
+     * Switches between normal text input and location autocomplete input
+     * @param {boolean} enableLocationMode - Whether to enable location autocomplete
+     */
+    function toggleLocationMode(enableLocationMode) {
+        isLocationMode = enableLocationMode;
+        
+        if (enableLocationMode) {
+            chatInput.style.display = 'none';
+            placePickerContainer.classList.add('active');
+            placePicker.setAttribute('placeholder', 'Enter the location of the incident');
+            placePicker.focus();
+        } else {
+            chatInput.style.display = 'block';
+            placePickerContainer.classList.remove('active');
+            placePicker.value = '';
+            chatInput.focus();
+        }
+    }
+
+    /**
+     * Detects if the bot's response is asking for location information
+     * @param {string} botResponse - The bot's response text
+     * @returns {boolean} - True if the bot is asking for location
+     */
+    function isAskingForLocation(botResponse) {
+        const locationKeywords = [
+            'location', 'address', 'where', 'street', 'place',
+            'happening', 'occurred', 'incident location', 'cross-street',
+            'landmark', 'neighborhood'
+        ];
+        
+        const lowerResponse = botResponse.toLowerCase();
+        return locationKeywords.some(keyword => lowerResponse.includes(keyword)) &&
+               (lowerResponse.includes('?') || lowerResponse.includes('provide'));
+    }
+
+    /**
+     * Formats a complete address from place details
+     * @param {Object} place - The place object from the place picker
+     * @returns {string} - The full formatted address
+     */
+    function formatFullAddress(place) {
+        if (!place) return '';
+
+        // If place has a formattedAddress property, use that
+        if (place.formattedAddress) {
+            return place.formattedAddress;
+        }
+
+        // Otherwise try to construct from display name and address components
+        let fullAddress = place.displayName || '';
+        
+        // If we have address components, add city, state, country
+        if (place.addressComponents) {
+            const cityComponent = place.addressComponents.find(component => 
+                component.types.includes('locality') || component.types.includes('sublocality'));
+            
+            const stateComponent = place.addressComponents.find(component => 
+                component.types.includes('administrative_area_level_1'));
+            
+            const countryComponent = place.addressComponents.find(component => 
+                component.types.includes('country'));
+            
+            // Construct the additional address parts
+            let additionalParts = [];
+            
+            if (cityComponent) additionalParts.push(cityComponent.longText);
+            if (stateComponent) additionalParts.push(stateComponent.shortText);
+            if (countryComponent) additionalParts.push(countryComponent.longText);
+            
+            // Add the additional parts to the display name if they're not already included
+            if (additionalParts.length > 0) {
+                const additionalText = additionalParts.join(', ');
+                // Only add if not already part of the display name
+                if (!fullAddress.includes(additionalText)) {
+                    fullAddress += ', ' + additionalText;
+                }
+            }
+        }
+        
+        return fullAddress;
+    }
+
+    // Event listener for place picker selection
+    placePicker.addEventListener('gmpx-placechange', (event) => {
+        const place = event.target.value;
+        if (place) {
+            // Format the full address with city, state, country
+            const fullAddress = formatFullAddress(place);
+            // Send the complete formatted address
+            sendLocationMessage(fullAddress);
+        }
+    });
+
+    /**
+     * Sends the selected location as a message
+     * @param {string} locationText - The selected location text
+     */
+    async function sendLocationMessage(locationText) {
+        addMessage(locationText, 'user');
+        
+        const userParts = [{ text: locationText }];
+        chatHistory.push({ role: "user", parts: userParts });
+        
+        // Switch back to normal input mode
+        toggleLocationMode(false);
+        
+        showTypingIndicator();
+        
+        try {
+            const response = await fetch('http://127.0.0.1:5000/api/chat/gemini', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ chatHistory: chatHistory })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                hideTypingIndicator();
+
+                const botResponse = data.response;
+                addMessage(botResponse, 'bot');
+                chatHistory.push({ role: "model", parts: [{ text: botResponse }] });
+
+                // Check for confirmation pattern
+                const summaryRegex = /Okay, so I have that there is a (.*) at (.*)\. This will be classified under (.*)\. Is this information correct and complete\?/i;
+                const match = botResponse.match(summaryRegex);
+
+                if (match && match.length === 4) {
+                    currentIncidentDetails.description = match[1].trim();
+                    currentIncidentDetails.location = match[2].trim();
+                    currentIncidentDetails.department_classification = match[3].trim().toUpperCase();
+                    currentIncidentDetails.image_url = uploadedImageBase64;
+                    awaitingConfirmation = true;
+                    console.log("Awaiting confirmation for incident:", currentIncidentDetails);
+                } else {
+                    awaitingConfirmation = false;
+                }
+
+            } else {
+                const errorData = await response.json();
+                hideTypingIndicator();
+                console.error('Error from chatbot API:', errorData);
+                addMessage("I'm sorry, I encountered an error processing your request.", 'bot');
+                awaitingConfirmation = false;
+            }
+        } catch (error) {
+            hideTypingIndicator();
+            console.error('Error communicating with chatbot:', error);
+            addMessage("I'm sorry, I'm having trouble connecting right now. Please try again later.", 'bot');
+            awaitingConfirmation = false;
+        }
+    }
+
     // Event listener for the send button
     sendChatBtn.addEventListener('click', async () => {
+        // Handle location mode separately
+        if (isLocationMode) {
+            const selectedPlace = placePicker.value;
+            if (selectedPlace && selectedPlace.displayName) {
+                await sendLocationMessage(selectedPlace.displayName);
+            }
+            return;
+        }
+
         const userMessage = chatInput.value.trim();
 
         // If awaiting confirmation, check user's response first
@@ -179,6 +359,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     addMessage(botResponse, 'bot'); // Display bot's response
                     chatHistory.push({ role: "model", parts: [{ text: botResponse }] }); // Add bot message to chat history
 
+                    // Check if bot is asking for location and switch to location mode
+                    if (isAskingForLocation(botResponse)) {
+                        toggleLocationMode(true);
+                    }
+
                     // Regex to parse the bot's summary and classification
                     // This regex MUST match the exact format of the final confirmation message from Gemini.
                     // Example: "Okay, so I have that there is a [description] at [location]. This will be classified under [DEPARTMENT]. Is this information correct and complete?"
@@ -217,7 +402,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Allow sending message with Enter key
     chatInput.addEventListener('keypress', (event) => {
-        if (event.key === 'Enter') {
+        if (event.key === 'Enter' && !isLocationMode) {
+            sendChatBtn.click();
+        }
+    });
+
+    // Handle Enter key for place picker
+    placePicker.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter' && isLocationMode) {
             sendChatBtn.click();
         }
     });

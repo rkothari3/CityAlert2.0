@@ -13,10 +13,15 @@
             background-color: #f0f2f5; /* Light gray background */
         }
         /* Custom styles for status badges */
-        .status-reported { @apply bg-blue-100 text-blue-800; }
-        .status-in_progress { @apply bg-yellow-100 text-yellow-800; }
-        .status-resolved { @apply bg-green-100 text-green-800; }
-        .status-closed { @apply bg-gray-100 text-gray-800; }
+        .status-reported { background-color: #dbeafe; color: #1e40af; }
+        .status-in_progress { background-color: #fef3c7; color: #92400e; }
+        .status-resolved { background-color: #d1fae5; color: #065f46; }
+        .status-closed { background-color: #f3f4f6; color: #1f2937; }
+        #departmentMap {
+            height: 350px;
+            width: 100%;
+            border-radius: 0.5rem;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -34,6 +39,16 @@
 
     <main class="flex-grow container mx-auto p-6">
         <h1 class="text-4xl font-extrabold text-gray-900 mb-8 text-center">Department Dashboard</h1>
+        
+        <!-- Map Section -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Your Department's Incident Locations</h2>
+            <div id="departmentMap" class="rounded-lg overflow-hidden shadow-inner border border-gray-200">
+                <div class="h-full flex items-center justify-center bg-gray-100 text-gray-500">
+                    Loading map...
+                </div>
+            </div>
+        </div>
         
         <div class="bg-white p-6 rounded-lg shadow-md mb-6 flex flex-col md:flex-row justify-between items-center">
             <h2 class="text-2xl font-semibold text-gray-800 mb-4 md:mb-0">Your Incidents</h2>
@@ -74,6 +89,11 @@
         </div>
     </footer>
 
+    <!-- Google Maps Script -->
+    <script>(g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})
+        ({key: "AIzaSyAEEKoMIx2HUkadquI8stDYbfKfAZWUGGw", v: "weekly"});</script>
+    
+    <script src="../public/js/map-utils.js"></script>
     <script src="js/dashboard.js"></script>
 </body>
 </html>
