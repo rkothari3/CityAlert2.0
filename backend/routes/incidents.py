@@ -38,22 +38,44 @@ def create_incident():
             return jsonify({"error": "Missing required incident fields (description, location, department_classification)"}), 400
 
         # Check for duplicate incidents (within last hour with same details)
-        # Adjust the time window as needed
-        one_hour_ago = datetime.datetime.now() - datetime.timedelta(hours=1) # Adjust time window as neccesary
+        # Enhanced duplicate detection with more detailed response
+        one_hour_ago = datetime.datetime.now() - datetime.timedelta(hours=1)
         
-        potential_duplicate = Incident.query.filter(
+        # Check for exact duplicates first
+        exact_duplicate = Incident.query.filter(
             Incident.description == data['description'],
             Incident.location == data['location'],
             Incident.timestamp >= one_hour_ago
         ).first()
         
-        if potential_duplicate:
-            print("WARNING: Duplicate incident detected")
-            return jsonify({
-                "warning": "Similar incident already reported",
-                "existing_incident": potential_duplicate.to_dict()
-            }), 409  # 409 Conflict status code
+        # If no exact duplicate, check for similar incidents in the same location
+        if not exact_duplicate:
+            similar_incidents = Incident.query.filter(
+                Incident.location == data['location'],
+                Incident.department_classification == data['department_classification'],
+                Incident.timestamp >= one_hour_ago,
+                Incident.status.in_(['reported', 'in_progress'])  # Only active incidents
+            ).all()
+            
+            if similar_incidents:
+                # Return the most recent similar incident
+                most_recent = max(similar_incidents, key=lambda x: x.timestamp)
+                print(f"WARNING: Similar incident detected at same location")
+                return jsonify({
+                    "warning": "Similar incident already reported at this location",
+                    "existing_incident": most_recent.to_dict(),
+                    "message": f"A {most_recent.department_classification.lower()} incident was reported at this location {format_time_ago(most_recent.timestamp)}. Please check the Alerts page to see if this is the same incident.",
+                    "alerts_page_url": "/alerts.html"
+                }), 409
         
+        if exact_duplicate:
+            print("WARNING: Exact duplicate incident detected")
+            return jsonify({
+                "warning": "Duplicate incident already reported",
+                "existing_incident": exact_duplicate.to_dict(),
+                "message": f"This exact incident was already reported {format_time_ago(exact_duplicate.timestamp)}. Please check the Alerts page for updates.",
+                "alerts_page_url": "/alerts.html"
+            }), 409
         
         description = data['description']
         location = data['location']
@@ -300,4 +322,24 @@ def serve_image(filename):
     except Exception as e:
         print(f"ERROR serving image {filename}: {str(e)}")
         return jsonify({"error": str(e)}), 404
+
+# Add helper function at the end of the file
+def format_time_ago(timestamp):
+    """
+    Formats a timestamp to show how long ago it was reported
+    """
+    now = datetime.datetime.now()
+    diff = now - timestamp
+    
+    if diff.total_seconds() < 60:
+        return "less than a minute ago"
+    elif diff.total_seconds() < 3600:
+        minutes = int(diff.total_seconds() / 60)
+        return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
+    elif diff.total_seconds() < 86400:
+        hours = int(diff.total_seconds() / 3600)
+        return f"{hours} hour{'s' if hours != 1 else ''} ago"
+    else:
+        days = int(diff.total_seconds() / 86400)
+        return f"{days} day{'s' if days != 1 else ''} ago"
 

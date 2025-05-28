@@ -31,3 +31,48 @@
 #modal-image {
     animation: zoom 0.3s ease;
 }
+
+/* Duplicate incident detection styles */
+.duplicate-actions {
+    border-left: 4px solid #f59e0b !important;
+    background-color: #fef3c7 !important;
+    color: #92400e !important;
+}
+
+.duplicate-incident-info {
+    margin-bottom: 12px;
+}
+
+.duplicate-incident-info p {
+    margin: 4px 0;
+    font-size: 14px;
+}
+
+.duplicate-actions-buttons button {
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.duplicate-actions-buttons button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.status-reported {
+    color: #dc2626;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.status-in_progress {
+    color: #d97706;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.status-resolved {
+    color: #059669;
+    font-weight: 600;
+    text-transform: capitalize;
+}

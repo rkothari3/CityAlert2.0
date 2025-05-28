@@ -76,8 +76,8 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {object} incidentData The incident details to submit.
      */
     async function submitIncident(incidentData) {
-        addMessage("Submitting your report...", 'bot'); // Inform user that submission is in progress
-        showTypingIndicator(); // Show typing indicator during submission
+        addMessage("Submitting your report...", 'bot');
+        showTypingIndicator();
 
         try {
             const response = await fetch('http://127.0.0.1:5000/api/incidents', {
@@ -90,7 +90,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const responseText = await response.text();
             
-            // Try to parse as JSON, fallback to text if it fails
             let result;
             try {
                 result = JSON.parse(responseText);
@@ -108,18 +107,81 @@ document.addEventListener('DOMContentLoaded', () => {
                 chatHistory = [];
                 currentIncidentDetails = { description: '', location: '', department_classification: '', image_url: null };
                 awaitingConfirmation = false;
+            } else if (response.status === 409) {
+                // Handle duplicate incident detection
+                hideTypingIndicator();
+                console.log('Duplicate incident detected:', result);
+                
+                const duplicateMessage = `${result.message || 'A similar incident has already been reported.'} You can view current incidents and their status on the Alerts page.`;
+                addMessage(duplicateMessage, 'bot');
+                
+                // Add a helpful button to view alerts
+                addDuplicateIncidentActions(result.existing_incident);
+                
+                // Reset chat state
+                chatHistory = [];
+                currentIncidentDetails = { description: '', location: '', department_classification: '', image_url: null };
+                awaitingConfirmation = false;
             } else {
-                // Handle errors from the backend API (e.g., validation errors, duplicate incidents)
                 hideTypingIndicator();
                 console.error('Error submitting incident:', result);
                 addMessage(`Failed to submit report: ${result.error || result.warning || 'Unknown error'}. Please try again.`, 'bot');
             }
         } catch (error) {
-            // Handle network errors (e.g., backend not reachable)
             hideTypingIndicator();
             console.error('Network error submitting incident:', error);
             addMessage("A network error occurred while submitting your report. Please try again later.", 'bot');
         }
+    }
+
+    /**
+     * Adds interactive elements for duplicate incident scenarios
+     * @param {object} existingIncident - The existing incident data
+     */
+    function addDuplicateIncidentActions(existingIncident) {
+        const actionsElement = document.createElement('div');
+        actionsElement.classList.add('message-bubble', 'message-bot', 'duplicate-actions');
+        
+        const formattedDate = new Date(existingIncident.timestamp).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        actionsElement.innerHTML = `
+            <div class="duplicate-incident-info">
+                <p><strong>Existing Incident:</strong></p>
+                <p><em>"${existingIncident.description}"</em></p>
+                <p><strong>Location:</strong> ${existingIncident.location}</p>
+                <p><strong>Reported:</strong> ${formattedDate}</p>
+                <p><strong>Status:</strong> <span class="status-${existingIncident.status}">${existingIncident.status.replace('_', ' ')}</span></p>
+            </div>
+            <div class="duplicate-actions-buttons" style="margin-top: 10px;">
+                <button class="view-alerts-btn" style="background-color: #3b82f6; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; margin-right: 8px;">
+                    View Alerts Page
+                </button>
+                <button class="report-anyway-btn" style="background-color: #6b7280; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;">
+                    Report Different Incident
+                </button>
+            </div>
+        `;
+
+        chatMessages.appendChild(actionsElement);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        // Add event listeners to the buttons
+        actionsElement.querySelector('.view-alerts-btn').addEventListener('click', () => {
+            window.open('alerts.html', '_blank');
+        });
+        
+        actionsElement.querySelector('.report-anyway-btn').addEventListener('click', () => {
+            addMessage("I'd like to report a different incident.", 'user');
+            addMessage("Of course! Please tell me about the new incident you'd like to report.", 'bot');
+            chatHistory = [];
+            resetImageUpload();
+        });
     }
 
     /**
