@@ -311,17 +311,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 addMessage(botResponse, 'bot');
                 chatHistory.push({ role: "model", parts: [{ text: botResponse }] });
 
-                // Check for confirmation pattern
-                const summaryRegex = /Okay, so I have that there is a (.*) at (.*)\. This will be classified under (.*)\. Is this information correct and complete\?/i;
+                // Use the same improved pattern matching logic
+                const summaryRegex = /(?:Okay|Alright|So),?\s+(?:so\s+)?I\s+have\s+that\s+there\s+is\s+(?:an?\s+)?(.*?)\s+at\s+(.*?)\.\s+This\s+will\s+be\s+classified\s+under\s+([A-Z_,\s]+)\.\s+Is\s+this\s+information\s+correct\s+and\s+complete\?/i;
                 const match = botResponse.match(summaryRegex);
 
-                if (match && match.length === 4) {
+                console.log("🔍 Location response - checking for confirmation:", botResponse);
+                console.log("🔍 Location response - pattern match:", match);
+
+                if (match && match.length >= 4) {
+                    console.log("✅ Confirmation pattern detected after location!");
                     currentIncidentDetails.description = match[1].trim();
                     currentIncidentDetails.location = match[2].trim();
-                    currentIncidentDetails.department_classification = match[3].trim().toUpperCase();
+                    const deptClassification = match[3].trim().split(',')[0].trim().toUpperCase();
+                    currentIncidentDetails.department_classification = deptClassification;
                     currentIncidentDetails.image_url = uploadedImageBase64;
                     awaitingConfirmation = true;
-                    console.log("Awaiting confirmation for incident:", currentIncidentDetails);
+                    console.log("📋 Incident details parsed from location response:", currentIncidentDetails);
                 } else {
                     awaitingConfirmation = false;
                 }
@@ -427,22 +432,41 @@ document.addEventListener('DOMContentLoaded', () => {
                         toggleLocationMode(true);
                     }
 
-                    // Regex to parse the bot's summary and classification
-                    // This regex MUST match the exact format of the final confirmation message from Gemini.
-                    // Example: "Okay, so I have that there is a [description] at [location]. This will be classified under [DEPARTMENT]. Is this information correct and complete?"
-                    const summaryRegex = /Okay, so I have that there is a (.*) at (.*)\. This will be classified under (.*)\. Is this information correct and complete\?/i;
+                    // IMPROVED: More flexible regex pattern to catch confirmation messages
+                    // This pattern is more forgiving while still being specific enough
+                    const summaryRegex = /(?:Okay|Alright|So),?\s+(?:so\s+)?I\s+have\s+that\s+there\s+is\s+(?:an?\s+)?(.*?)\s+at\s+(.*?)\.\s+This\s+will\s+be\s+classified\s+under\s+([A-Z_,\s]+)\.\s+Is\s+this\s+information\s+correct\s+and\s+complete\?/i;
                     const match = botResponse.match(summaryRegex);
 
-                    // If the bot's response matches the summary pattern, extract details
-                    if (match && match.length === 4) {
+                    console.log("🔍 Checking for confirmation pattern in:", botResponse);
+                    console.log("🔍 Pattern match result:", match);
+
+                    if (match && match.length >= 4) {
+                        console.log("✅ Confirmation pattern detected!");
                         currentIncidentDetails.description = match[1].trim();
                         currentIncidentDetails.location = match[2].trim();
-                        currentIncidentDetails.department_classification = match[3].trim().toUpperCase(); // Ensure uppercase for consistent matching with backend
-                        currentIncidentDetails.image_url = uploadedImageBase64; // Assign the last uploaded image
-                        awaitingConfirmation = true; // Set flag to await user confirmation
-                        console.log("Awaiting confirmation for incident:", currentIncidentDetails);
+                        // Clean up department classification - take first department if multiple
+                        const deptClassification = match[3].trim().split(',')[0].trim().toUpperCase();
+                        currentIncidentDetails.department_classification = deptClassification;
+                        currentIncidentDetails.image_url = uploadedImageBase64;
+                        awaitingConfirmation = true;
+                        console.log("📋 Incident details parsed:", currentIncidentDetails);
                     } else {
-                        awaitingConfirmation = false; // Not in a confirmation state if summary pattern not matched
+                        // Additional fallback patterns for edge cases
+                        const altPattern1 = /I\s+(?:understand|have)\s+(?:that\s+)?(?:you\s+have\s+)?(?:reported\s+)?(?:an?\s+)?(.*?)\s+(?:at|in|on|near)\s+(.*?)\.\s+.*?(?:classified|category|department).*?([A-Z_]+)/i;
+                        const altMatch = botResponse.match(altPattern1);
+                        
+                        if (altMatch && altMatch.length >= 4) {
+                            console.log("✅ Alternative confirmation pattern detected!");
+                            currentIncidentDetails.description = altMatch[1].trim();
+                            currentIncidentDetails.location = altMatch[2].trim();
+                            currentIncidentDetails.department_classification = altMatch[3].trim().toUpperCase();
+                            currentIncidentDetails.image_url = uploadedImageBase64;
+                            awaitingConfirmation = true;
+                            console.log("📋 Incident details parsed (alt pattern):", currentIncidentDetails);
+                        } else {
+                            console.log("❌ No confirmation pattern found");
+                            awaitingConfirmation = false;
+                        }
                     }
 
                 } else {
