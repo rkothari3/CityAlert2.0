@@ -38,8 +38,14 @@ app.config['SECRET_KEY'] = SECRET_KEY
 # Initialize the SQLAlchemy database instance
 db.init_app(app) # Use db.init_app(app) instead of SQLAlchemy(app) when db is imported from models
 
-# Initialize Flask-CORS with more permissive settings for development
-CORS(app, origins=["http://127.0.0.1:5500", "http://localhost:5500", "http://127.0.0.1:3000", "http://localhost:3000"])
+# Initialize Flask-CORS
+# In production, you might want to restrict this to your frontend domain
+CORS(app, resources={
+    r"/*": {
+        "origins": ["*"]  # Allow all origins in development
+        # In production, replace "*" with your frontend URL, e.g., "https://your-frontend.vercel.app"
+    }
+})
 
 # Add a before_request handler to log all incoming requests
 @app.before_request
