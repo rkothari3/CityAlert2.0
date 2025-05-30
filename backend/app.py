@@ -25,6 +25,7 @@ from routes.chat import chat_bp
 
 # Add this import
 from routes.config import config_bp
+from routes.subscriptions import subscriptions_bp
 
 # Initialize the Flask application
 app = Flask(__name__)
@@ -52,14 +53,11 @@ def log_request_info():
     print("========================\n")
 
 
-# Register the incidents Blueprint with a URL prefix
+# Register Blueprints with the '/api' prefix
 app.register_blueprint(incidents_bp, url_prefix='/api')
-
-# Same for departments
 app.register_blueprint(departments_bp, url_prefix='/api')
-
-# Chat
 app.register_blueprint(chat_bp, url_prefix='/api')
+app.register_blueprint(subscriptions_bp, url_prefix='/api')
 
 # Add this line with your other blueprint registrations
 app.register_blueprint(config_bp)
@@ -115,6 +113,38 @@ def uploaded_file(filename):
     """Serve uploaded images"""
     uploads_dir = os.path.join(os.path.dirname(__file__), 'uploads')
     return send_from_directory(uploads_dir, filename)
+
+@app.route('/test-email')
+def test_email():
+    """Test email functionality"""
+    try:
+        from utils.email_service import send_incident_alert_email
+        from models import UserSubscription
+        
+        # Test with a sample incident
+        test_incident = {
+            'id': 999,
+            'description': 'Test incident for email verification',
+            'location': 'Test Location',
+            'department_classification': 'POLICE',
+            'status': 'reported',
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        # Get first active subscription or create a test one
+        test_subscription = UserSubscription.query.filter_by(is_active=True).first()
+        if not test_subscription:
+            return jsonify({"error": "No active subscriptions found. Please subscribe first."}), 400
+            
+        success = send_incident_alert_email(test_subscription.email, test_incident)
+        
+        if success:
+            return jsonify({"message": f"Test email sent successfully to {test_subscription.email}"})
+        else:
+            return jsonify({"error": "Failed to send test email"}), 500
+            
+    except Exception as e:
+        return jsonify({"error": f"Test email failed: {str(e)}"}), 500
 
 # This block ensures that the Flask development server runs only when the script
 # is executed directly (e.g., `python app.py`), not when imported as a module.

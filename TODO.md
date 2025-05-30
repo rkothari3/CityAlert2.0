@@ -1,6 +1,6 @@
 - Duplicate incident detection.
 - ✅ Map based location selection and map used to showcase different reported incidents all over the place.
-- The departmental can dispatch alerts to users in the database. Might need to build user profile stuff for this. This can also be used to provide update on severe events.
+- ✅ The departmental can dispatch alerts to users in the database. Built user profile stuff for this using email subscriptions.
 
 ## Recently Completed:
 - ✅ Interactive maps showing incident locations with color-coded markers
@@ -11,6 +11,10 @@
 - ✅ Custom marker styling based on incident status and department
 - ✅ Complete department dashboard map integration with error handling
 - ✅ Department-specific incident filtering on interactive maps
+- ✅ Email alert system for public users with subscription management
+- ✅ Email notifications sent automatically when new incidents are reported
+- ✅ User subscription system with department filtering options
+- ✅ Email confirmation and unsubscribe functionality
 
 # CityAlert Development TODO
 
@@ -52,6 +56,25 @@
 - Status management (reported → in_progress → resolved)
 - Secure incident deletion with department key verification
 
+### Email Alert System
+- **Backend**: Comprehensive email notification system in `/backend/utils/email_service.py`
+  - Incident alert emails sent automatically when new incidents are reported
+  - Status update emails sent when incident status changes (reported → in_progress → resolved)
+  - Department-specific filtering for targeted notifications
+  - HTML and text email templates with professional styling
+  - Support for Gmail SMTP and other email providers
+
+- **Subscription Management**: User subscription system in `/backend/routes/subscriptions.py`
+  - Email subscription with optional department filtering
+  - Confirmation emails for new subscriptions
+  - Unsubscribe functionality with direct links
+  - Active subscription management
+
+- **Frontend Integration**: Email subscription form in `/public/resources.html`
+  - User-friendly subscription interface
+  - Department filter selection options
+  - Real-time feedback for subscription actions
+
 ## 🚀 Future Enhancements
 
 ### Duplicate Detection Improvements
@@ -82,3 +105,10 @@
 - [ ] Voice-to-text incident reporting
 - [ ] Integration with existing emergency services
 - [ ] Automated incident severity assessment
+
+### Email Features
+- [ ] Automated incident severity assessment
+- [ ] User dashboard for managing email preferences
+- [ ] SMS alert integration for critical incidents
+- [ ] Push notification support for web browsers
+- [ ] Email digest options (daily/weekly summaries)

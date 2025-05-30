@@ -5,8 +5,9 @@ import base64
 import os
 from flask import Blueprint, request, jsonify, send_from_directory
 from database import db # Import the db instance from our database.py
-from models import Incident, Department # Import our Incident and Department models
+from models import Incident, Department, UserSubscription
 from utils.geocoding import geocode_address # Import our new geocoding function
+from utils.email_service import send_incident_alert_email, send_status_update_email
 from uuid import uuid4
 
 # Create a Blueprint for incident-related routes.
@@ -142,6 +143,54 @@ def create_incident():
 
         print(f"✓ Incident created successfully with ID: {new_incident.id}")
 
+        # NEW: Send email alerts to subscribed users
+        try:
+            print("📧 Starting email alert process...")
+            active_subscriptions = UserSubscription.query.filter_by(is_active=True).all()
+            print(f"📧 Found {len(active_subscriptions)} active subscriptions")
+            
+            if not active_subscriptions:
+                print("⚠️ No active subscriptions found - no emails to send")
+            
+            incident_dict = new_incident.to_dict()
+            
+            emails_sent = 0
+            emails_failed = 0
+            
+            for subscription in active_subscriptions:
+                print(f"📧 Processing subscription for: {subscription.email}")
+                
+                # Check if user wants alerts for this department
+                if subscription.department_filter:
+                    user_departments = [dept.strip().upper() for dept in subscription.department_filter.split(',')]
+                    incident_departments = [dept.strip().upper() for dept in department_classification.split(',')]
+                    
+                    print(f"📧 User departments: {user_departments}")
+                    print(f"📧 Incident departments: {incident_departments}")
+                    
+                    # Check if any of the incident departments match user's filter
+                    if not any(dept in user_departments for dept in incident_departments):
+                        print(f"📧 Skipping {subscription.email} - department filter doesn't match")
+                        continue
+                
+                # Send the alert email
+                print(f"📧 Sending alert email to: {subscription.email}")
+                if send_incident_alert_email(subscription.email, incident_dict):
+                    emails_sent += 1
+                    print(f"✅ Email sent successfully to {subscription.email}")
+                else:
+                    emails_failed += 1
+                    print(f"❌ Failed to send email to {subscription.email}")
+            
+            print(f"📧 Email summary: {emails_sent} sent, {emails_failed} failed")
+            
+        except Exception as email_error:
+            print(f"❌ Critical error in email sending process: {str(email_error)}")
+            print(f"❌ Error type: {type(email_error).__name__}")
+            import traceback
+            traceback.print_exc()
+            # Don't fail the incident creation if email sending fails
+
         # Return the newly created incident's data as JSON with a 201 Created status
         return jsonify(new_incident.to_dict()), 201
 
@@ -207,6 +256,7 @@ def update_incident(incident_id):
     Updates an existing incident report by its ID.
     Expects JSON data with fields to update (e.g., 'status', 'description').
     If location is updated, it will also re-geocode the new location.
+    Now also sends email notifications when status changes.
     """
     try:
         incident = Incident.query.get(incident_id) # Find the incident by ID
@@ -218,6 +268,10 @@ def update_incident(incident_id):
 
         if not data:
             return jsonify({"error": "Request must contain JSON data"}), 400
+
+        # Store old status for email notification
+        old_status = incident.status
+        status_changed = False
 
         # Update fields if they are present in the request data
         if 'description' in data:
@@ -235,9 +289,53 @@ def update_incident(incident_id):
         if 'department_classification' in data:
             incident.department_classification = data['department_classification']
         if 'status' in data:
-            incident.status = data['status']
+            new_status = data['status']
+            if new_status != old_status:
+                incident.status = new_status
+                status_changed = True
+                print(f"Status changed from '{old_status}' to '{new_status}' for incident {incident_id}")
 
         db.session.commit() # Commit the changes to the database
+
+        # Send status update emails if status changed
+        if status_changed:
+            try:
+                print("📧 Status changed - sending update emails...")
+                active_subscriptions = UserSubscription.query.filter_by(is_active=True).all()
+                print(f"📧 Found {len(active_subscriptions)} active subscriptions")
+                
+                incident_dict = incident.to_dict()
+                
+                emails_sent = 0
+                emails_failed = 0
+                
+                for subscription in active_subscriptions:
+                    # Check if user wants alerts for this department
+                    if subscription.department_filter:
+                        user_departments = [dept.strip().upper() for dept in subscription.department_filter.split(',')]
+                        incident_departments = [dept.strip().upper() for dept in incident.department_classification.split(',')]
+                        
+                        # Check if any of the incident departments match user's filter
+                        if not any(dept in user_departments for dept in incident_departments):
+                            print(f"📧 Skipping {subscription.email} - department filter doesn't match")
+                            continue
+                    
+                    # Send the status update email
+                    print(f"📧 Sending status update email to: {subscription.email}")
+                    if send_status_update_email(subscription.email, incident_dict, old_status, new_status):
+                        emails_sent += 1
+                        print(f"✅ Status update email sent successfully to {subscription.email}")
+                    else:
+                        emails_failed += 1
+                        print(f"❌ Failed to send status update email to {subscription.email}")
+                
+                print(f"📧 Status update email summary: {emails_sent} sent, {emails_failed} failed")
+                
+            except Exception as email_error:
+                print(f"❌ Critical error in status update email process: {str(email_error)}")
+                import traceback
+                traceback.print_exc()
+                # Don't fail the incident update if email sending fails
 
         return jsonify(incident.to_dict()), 200
 

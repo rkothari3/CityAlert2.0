@@ -84,3 +84,37 @@ class Department(db.Model):
             # Do NOT include login_key in to_dict for security reasons
         }
 
+# Define the UserSubscription model
+# This class represents users who have subscribed to incident alerts
+class UserSubscription(db.Model):
+    """
+    Represents a user subscription for incident email alerts.
+
+    Attributes:
+        id (int): Primary key, unique identifier for the subscription.
+        email (str): The user's email address. Must be unique.
+        is_active (bool): Whether the subscription is active.
+        created_at (datetime): When the subscription was created.
+        department_filter (str, optional): Comma-separated departments to filter alerts (e.g., "POLICE,FIRE").
+                                          If None, receives all incident alerts.
+    """
+    __tablename__ = 'user_subscriptions'
+
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(255), unique=True, nullable=False)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    department_filter = db.Column(db.String(500), nullable=True)  # Optional department filtering
+
+    def __repr__(self):
+        return f"UserSubscription(id={self.id}, email='{self.email}', active={self.is_active})"
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'email': self.email,
+            'is_active': self.is_active,
+            'created_at': self.created_at.isoformat(),
+            'department_filter': self.department_filter
+        }
+

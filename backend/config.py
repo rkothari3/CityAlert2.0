@@ -38,3 +38,14 @@ GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 # 5. Optionally restrict the API key to your server's IP
 GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY', '')  # Replace with your actual API key
 
+# Email Configuration
+SMTP_SERVER = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
+SMTP_PORT = int(os.getenv('SMTP_PORT', '465'))
+SMTP_USERNAME = os.getenv('SMTP_USERNAME', '')  # Your email address
+SMTP_PASSWORD = os.getenv('SMTP_PASSWORD', '')  # Your email password or app password
+SENDER_EMAIL = os.getenv('SENDER_EMAIL', SMTP_USERNAME)
+SENDER_NAME = os.getenv('SENDER_NAME', 'CityAlert Notifications')
+
+# Base URL for unsubscribe links
+BASE_URL = os.getenv('BASE_URL', 'http://127.0.0.1:5000')
+

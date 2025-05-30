@@ -8,10 +8,12 @@ A web platform that allows civilians to report incidents in their city and for t
     - Uses a fine-tuned gemini-chatbot to take those reports.
     - The reports are stored in a Database and classified by the department(s) that would handle them.
     - **NEW:** Interactive map showing all reported incidents with real-time updates
+    - **NEW:** Email alert system - users can subscribe to receive notifications when new incidents are reported
+    - **NEW:** Status update notifications - subscribers receive emails when incident status changes
     - Has 3 pages:
         - Home Page (which has a report incident button that pops up that chat interface that you can use to report the incident - supplement it with a location and image if possible)
         - Alerts page that people can see are currently ongoing with an interactive map
-        - Resources page that provides people general info on what to do in different scenarios (basically like a blog)
+        - Resources page that provides people general info on what to do in different scenarios and email subscription options
     - The gemini chatbot should have these custom instructions, it's basically taking info from the user and generating a report:
 
 ```
