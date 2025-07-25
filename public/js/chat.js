@@ -474,7 +474,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     const errorData = await response.json();
                     hideTypingIndicator();
                     console.error('Error from chatbot API:', errorData);
-                    addMessage("I'm sorry, I encountered an error processing your request.", 'bot');
+                    
+                    // Provide more specific error messages based on the error type
+                    let errorMessage = "I'm sorry, I encountered an error processing your request.";
+                    
+                    if (errorData.error && errorData.error.includes('API key')) {
+                        errorMessage = "The chatbot service is currently unavailable due to configuration issues. Please try reporting your incident directly using the form above.";
+                    } else if (errorData.error && errorData.error.includes('forbidden')) {
+                        errorMessage = "The chatbot service is temporarily unavailable. Please try reporting your incident directly using the form above.";
+                    } else if (errorData.debug) {
+                        console.log('Debug info:', errorData.debug);
+                        if (errorData.suggestion) {
+                            console.log('Suggestion:', errorData.suggestion);
+                        }
+                    }
+                    
+                    addMessage(errorMessage, 'bot');
                     awaitingConfirmation = false;
                 }
             } catch (error) {
@@ -618,6 +633,42 @@ document.addEventListener('DOMContentLoaded', () => {
         uploadedImagePreview.src = '#'; // Reset image source
         imagePreviewContainer.classList.add('hidden'); // Hide preview container
     }
+
+    // Initialize Google Extended Component Library with API key
+    async function initializeGoogleComponents() {
+        try {
+            // Wait for config to be loaded
+            let retries = 0;
+            while (!window.CITY_ALERT_CONFIG && retries < 50) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                retries++;
+            }
+            
+            if (window.CITY_ALERT_CONFIG && window.CITY_ALERT_CONFIG.MAPS_API_KEY && 
+                window.CITY_ALERT_CONFIG.MAPS_API_KEY !== 'YOUR_GOOGLE_MAPS_API_KEY_HERE') {
+                
+                const apiLoader = document.getElementById('apiLoader');
+                if (apiLoader) {
+                    apiLoader.setAttribute('key', window.CITY_ALERT_CONFIG.MAPS_API_KEY);
+                    console.log('✓ Google Extended Component Library initialized with API key');
+                } else {
+                    console.warn('⚠ API loader element not found');
+                }
+            } else {
+                console.warn('⚠ Google Maps API key not available for Extended Component Library');
+                // Disable place picker if no API key
+                const placePickerContainer = document.getElementById('placePickerContainer');
+                if (placePickerContainer) {
+                    placePickerContainer.style.display = 'none';
+                }
+            }
+        } catch (error) {
+            console.error('Failed to initialize Google Components:', error);
+        }
+    }
+    
+    // Initialize Google Components
+    initializeGoogleComponents();
 
     // Initial bot greeting when the modal opens (triggered by main.js or on page load)
     addMessage("Hello! I'm CityAlert, your AI assistant for reporting incidents. You can either describe what happened or upload an image for me to analyze.", 'bot');

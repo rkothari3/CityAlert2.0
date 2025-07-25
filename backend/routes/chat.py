@@ -106,11 +106,24 @@ def chat_with_gemini():
     and returns Gemini's response.
     """
     try:
+        # Check if API key is available
+        if not GEMINI_API_KEY:
+            return jsonify({
+                "error": "Gemini API key not configured. Please set GEMINI_API_KEY environment variable.",
+                "debug": "GEMINI_API_KEY is empty or not set"
+            }), 500
+            
         data = request.get_json()
         if not data or 'chatHistory' not in data:
             return jsonify({"error": "Missing 'chatHistory' in request"}), 400
 
         user_chat_history = data['chatHistory']
+        
+        print(f"[DEBUG] GEMINI_API_KEY present: {bool(GEMINI_API_KEY)}")
+        print(f"[DEBUG] API Key length: {len(GEMINI_API_KEY) if GEMINI_API_KEY else 0}")
+        if GEMINI_API_KEY:
+            print(f"[DEBUG] API Key starts with: {GEMINI_API_KEY[:10]}...")
+        print(f"[DEBUG] Chat history length: {len(user_chat_history)}")
 
         # Construct the payload for the Gemini API
         # The system instructions are added as the first 'user' and 'model' turn
@@ -153,8 +166,28 @@ def chat_with_gemini():
         }
 
         # Make the request to the Gemini API
+        print(f"[DEBUG] Making request to Gemini API...")
         gemini_response = requests.post(f"{GEMINI_API_URL}?key={GEMINI_API_KEY}", headers=headers, data=json.dumps(payload))
-        gemini_response.raise_for_status() # Raise an HTTPError for bad responses (4xx or 5xx)
+        
+        print(f"[DEBUG] Gemini API response status: {gemini_response.status_code}")
+        
+        if not gemini_response.ok:
+            error_text = gemini_response.text
+            print(f"[DEBUG] Gemini API error response: {error_text}")
+            
+            if gemini_response.status_code == 403:
+                return jsonify({
+                    "error": "Gemini API access forbidden. Please check your API key and billing status.",
+                    "debug": f"HTTP 403: {error_text}",
+                    "suggestion": "Verify that the Gemini API is enabled and your API key has proper permissions."
+                }), 500
+            else:
+                return jsonify({
+                    "error": f"Gemini API returned error: {gemini_response.status_code}",
+                    "debug": error_text
+                }), 500
+        
+        gemini_response.raise_for_status() # This should not raise now, but keeping for safety
 
         gemini_data = gemini_response.json()
         print(f"Gemini Raw Response: {json.dumps(gemini_data, indent=2)}")
