@@ -4,7 +4,10 @@
       "Bash(grep:*)",
       "Bash(git add:*)",
       "Bash(curl:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(python:*)",
+      "Bash(pip3 install:*)",
+      "Bash(ls:*)"
     ],
     "deny": []
   }
