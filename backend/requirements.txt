@@ -2,3 +2,4 @@ Flask
 Flask-SQLAlchemy
 flask-cors
 requests>=2.31.0
+python-dotenv
