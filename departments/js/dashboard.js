@@ -52,11 +52,28 @@ document.addEventListener('DOMContentLoaded', () => {
     // Display the retrieved department name on the dashboard
     departmentNameDisplay.textContent = `${departmentName} Department`;
 
+    // Wait for both DOM and Google Maps API to be ready
+    async function waitForGoogleMapsAPI() {
+        let retries = 0;
+        while ((!window.google || !window.google.maps) && retries < 100) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            retries++;
+        }
+        
+        if (!window.google || !window.google.maps) {
+            throw new Error('Google Maps API failed to load after 10 seconds');
+        }
+    }
+
     /**
      * Initialize the Google Map for showing department-specific incident locations
      */
     async function initializeDepartmentMap() {
         try {
+            console.log('Waiting for Google Maps API...');
+            await waitForGoogleMapsAPI();
+            console.log('✓ Google Maps API ready');
+            
             console.log('Initializing department map...');
             
             // Wait for IncidentMap class to be available
