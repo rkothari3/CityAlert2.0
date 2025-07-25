@@ -118,7 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // Construct the API URL for fetching department-specific incidents
-            const url = `http://127.0.0.1:5000/api/departments/${departmentName}/incidents${status ? `?status=${status}` : ''}`;
+            const url = `${API_BASE_URL}/departments/${departmentName}/incidents${status ? `?status=${status}` : ''}`;
             const response = await fetch(url);
 
             if (response.ok) {
@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (incident.image_url) {
                 // Check if the image_url is a relative path (starts with '/uploads/')
                 const imageUrl = incident.image_url.startsWith('/uploads/') 
-                    ? `http://127.0.0.1:5000/api${incident.image_url}`
+                    ? `${API_BASE_URL}${incident.image_url}`
                     : incident.image_url;
                 
                 imageHtml = `<div class="incident-image-container">
@@ -302,7 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     async function deleteIncident(incidentId, departmentKey) {
         try {
-            const response = await fetch(`http://127.0.0.1:5000/api/incidents/${incidentId}`, {
+            const response = await fetch(`${API_BASE_URL}/incidents/${incidentId}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
@@ -348,7 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     async function updateIncidentStatus(incidentId, newStatus) {
         try {
-            const response = await fetch(`http://127.0.0.1:5000/api/incidents/${incidentId}`, {
+            const response = await fetch(`${API_BASE_URL}/incidents/${incidentId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

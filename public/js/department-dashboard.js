@@ -6,8 +6,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const noIncidentsMessage = document.getElementById('no-incidents-message');
     const loadingMessage = document.getElementById('loading-incidents-message');
     
-    // Define the base URL for your backend API
-    const API_BASE_URL = 'http://127.0.0.1:5000/api';
+    // API_BASE_URL is now defined in config.js
     
     // Check if user is logged in as a department
     function checkDepartmentLogin() {

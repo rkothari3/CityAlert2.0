@@ -6,9 +6,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const noAlertsMessage = document.getElementById('no-alerts-message');
     const loadingAlertsMessage = document.getElementById('loading-alerts-message');
 
-    // Define the base URL for your backend API
-    // Ensure this matches the host and port your Flask backend is running on
-    const API_BASE_URL = 'http://127.0.0.1:5000/api';
+    // API_BASE_URL is now defined in config.js
 
     // Initialize the incident map
     let incidentMap = null;
