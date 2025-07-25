@@ -3,7 +3,7 @@ from config import GOOGLE_MAPS_API_KEY
 
 config_bp = Blueprint('config', __name__)
 
-@config_bp.route('/js/config.js')
+@config_bp.route('/config/js/config.js')
 def config_js():
     config_js = f"""
     // This file is auto-generated. Do not edit directly.

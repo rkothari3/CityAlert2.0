@@ -62,7 +62,7 @@ app.register_blueprint(chat_bp, url_prefix='/api')
 app.register_blueprint(subscriptions_bp, url_prefix='/api')
 
 # Add this line with your other blueprint registrations
-app.register_blueprint(config_bp)
+app.register_blueprint(config_bp, url_prefix='/api')
 
 # Function to initialize default departments
 def create_default_departments():

@@ -1,6 +1,19 @@
 // public/js/alerts.js
 
-document.addEventListener('DOMContentLoaded', async () => {
+// Wait for both DOM and Google Maps API to be ready
+async function waitForGoogleMapsAPI() {
+    let retries = 0;
+    while ((!window.google || !window.google.maps) && retries < 100) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        retries++;
+    }
+    
+    if (!window.google || !window.google.maps) {
+        throw new Error('Google Maps API failed to load after 10 seconds');
+    }
+}
+
+async function initializeAlertsApp() {
     // Get references to the DOM elements where alerts will be displayed
     const alertsContainer = document.getElementById('alerts-container');
     const noAlertsMessage = document.getElementById('no-alerts-message');
@@ -16,6 +29,10 @@ document.addEventListener('DOMContentLoaded', async () => {
      */
     async function initializeMap() {
         try {
+            console.log('Waiting for Google Maps API...');
+            await waitForGoogleMapsAPI();
+            console.log('✓ Google Maps API ready');
+            
             console.log('Initializing alerts map...');
             incidentMap = new IncidentMap('alertsMap', {
                 center: { lat: 37.7749, lng: -122.4194 }, // Default to San Francisco
@@ -28,14 +45,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Failed to initialize map:', error);
             // Show error message in map container
             const mapContainer = document.getElementById('alertsMap');
-            mapContainer.innerHTML = `
-                <div class="h-full flex items-center justify-center bg-red-50 text-red-600">
-                    <div class="text-center">
-                        <p class="font-medium">Map failed to load</p>
-                        <p class="text-sm">Please check your internet connection</p>
+            if (mapContainer) {
+                mapContainer.innerHTML = `
+                    <div class="h-full flex items-center justify-center bg-red-50 text-red-600">
+                        <div class="text-center">
+                            <p class="font-medium">Map failed to load</p>
+                            <p class="text-sm">${error.message}</p>
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
+            }
         }
     }
 
@@ -181,6 +200,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     setInterval(loadAndRefreshAlerts, 30000); // Refresh every 30 seconds (30000 milliseconds)
 
     console.log("alerts.js loaded and incident fetching initiated.");
+}
+
+// Start the application when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, waiting for app initialization...');
+    initializeAlertsApp().catch(error => {
+        console.error('Failed to initialize alerts app:', error);
+    });
 });
 
 /**

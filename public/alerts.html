@@ -142,7 +142,10 @@ async function initializeGoogleMaps() {
     ({key: window.CITY_ALERT_CONFIG.MAPS_API_KEY, v: "weekly"});
 }
 
-document.addEventListener('DOMContentLoaded', initializeGoogleMaps);
+// Auto-initialize Google Maps when the page loads
+initializeGoogleMaps().catch(error => {
+    console.error('Failed to load Google Maps:', error);
+});
 </script>
     
     <script src="js/map-utils.js"></script>
