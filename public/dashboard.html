@@ -13,13 +13,28 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.6.0/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.6.0/ScrollTrigger.min.js"></script>
-    <!-- Add this before other scripts -->
+    <!-- Load environment variables first -->
+    <script>
+    // Load environment variables from Netlify
+    window.GOOGLE_MAPS_API_KEY = window.NETLIFY_ENV?.GOOGLE_MAPS_API_KEY || window.GOOGLE_MAPS_API_KEY;
+    </script>
+    
+    <!-- Load config after env vars -->
     <script src="js/config.js"></script>
-    <!-- Replace the hardcoded API key script -->
+    
+    <!-- Load Google Maps API with error handling -->
     <script>
     document.addEventListener('DOMContentLoaded', () => {
+        if (!window.CITY_ALERT_CONFIG.MAPS_API_KEY || window.CITY_ALERT_CONFIG.MAPS_API_KEY === 'YOUR_GOOGLE_MAPS_API_KEY_HERE') {
+            console.error('Google Maps API key is missing. Please set GOOGLE_MAPS_API_KEY environment variable.');
+            return;
+        }
+        
         const script = document.createElement('script');
         script.src = `https://maps.googleapis.com/maps/api/js?key=${window.CITY_ALERT_CONFIG.MAPS_API_KEY}&libraries=places`;
+        script.onerror = () => {
+            console.error('Failed to load Google Maps API');
+        };
         document.head.appendChild(script);
     });
     </script>
