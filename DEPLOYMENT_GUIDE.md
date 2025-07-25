@@ -119,11 +119,31 @@ Replace all instances of `http://127.0.0.1:5000` in your JavaScript files with y
 - **503 Service Unavailable**: Render free tier sleeps after 15 minutes of inactivity. First request may take 30+ seconds.
 - **Module Not Found**: Ensure `requirements.txt` includes all dependencies.
 - **Database Issues**: SQLite database is recreated on each deployment. Consider upgrading to PostgreSQL for persistence.
+- **Port Binding Issues**: Ensure Flask app binds to `0.0.0.0` and uses `PORT` environment variable:
+  ```python
+  host = '0.0.0.0'
+  port = int(os.environ.get('PORT', 5000))
+  app.run(debug=False, host=host, port=port)
+  ```
 
 ### Frontend Issues
 - **CORS Errors**: Ensure your backend allows requests from your Netlify domain.
 - **API Not Found**: Double-check that all API endpoints use your Render backend URL.
 - **Maps Not Loading**: Verify Google Maps API key is configured and domain is whitelisted.
+- **Department Pages 404**: Ensure `_redirects` file exists in `public/` directory:
+  ```
+  /departments/* /departments/:splat 200
+  ```
+- **Google Maps API Features Not Working**:
+  1. **Missing API Key**: Ensure `GOOGLE_MAPS_API_KEY` environment variable is set on Render
+  2. **Required APIs**: Enable these APIs in Google Cloud Console:
+     - Maps JavaScript API
+     - Geocoding API  
+     - Places API
+  3. **API Key Restrictions**: Add your domains to API key restrictions:
+     - `https://your-netlify-app.netlify.app/*`
+     - `https://your-render-app.onrender.com/*`
+  4. **Check Console Errors**: Open browser dev tools to see specific API errors
 
 ### Email Issues
 - **Emails Not Sending**: 
