@@ -158,7 +158,9 @@ if __name__ == '__main__':
         create_default_departments()
     # Run the Flask application in debug mode with specific host and port
     print("Starting CityAlert Backend Server...")
-    print("Server will be available at: http://127.0.0.1:5000")
-    print("API endpoints available at: http://127.0.0.1:5000/api/")
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    host = '0.0.0.0'
+    port = int(os.environ.get('PORT', 5000))
+    print(f"Server will be available at: http://{host}:{port}")
+    print(f"API endpoints available at: http://{host}:{port}/api/")
+    app.run(debug=False, host=host, port=port)
 
