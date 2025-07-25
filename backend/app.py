@@ -38,6 +38,10 @@ app.config['SECRET_KEY'] = SECRET_KEY
 # Initialize the SQLAlchemy database instance
 db.init_app(app) # Use db.init_app(app) instead of SQLAlchemy(app) when db is imported from models
 
+# Initialize CORS to allow requests from your Netlify domain
+# Replace 'your-netlify-app.netlify.app' with your actual Netlify domain
+CORS(app, origins=['http://localhost:3000', 'http://127.0.0.1:5000', 'https://cityalert.netlify.app'])
+
 
 # Add a before_request handler to log all incoming requests
 @app.before_request
